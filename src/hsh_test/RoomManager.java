@@ -73,12 +73,18 @@ public class RoomManager
 
 	public void requestFileList()
 	{
-	
+		
 	}
 	
+	public void uploadFile()
+	{
+		
+	}
 	
-	
-	
+	public void donwloadFile()
+	{
+		
+	}
 	
 	
 }
