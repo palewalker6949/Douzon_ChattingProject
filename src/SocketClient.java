@@ -65,7 +65,7 @@ public class SocketClient {
 		String command = jsonObject.getString("command");
 		
 		switch(command) {
-			case "incoming":
+			case "income":
 				this.chatName = jsonObject.getString("data");
 				roomManager.sendToAll(this, "들어오셨습니다.");
 				roomManager.enterRoom(null);
