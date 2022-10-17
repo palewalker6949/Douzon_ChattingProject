@@ -65,7 +65,7 @@ public class SocketClient {
 		String command = jsonObject.getString("command");
 		
 		switch(command) {
-			case "incoming":
+			case "enterRoom":
 				this.chatName = jsonObject.getString("data");
 				roomManager.sendToAll(this, "들어오셨습니다.");
 				roomManager.enterRoom(null);
@@ -75,8 +75,8 @@ public class SocketClient {
 				roomManager.sendToAll(this, message);
 				break;
 			case "checkLogin":
-				String userId = jsonObject.getString("id");
-				String userPassword= jsonObject.getString("password");
+				String userId = jsonObject.getString("ID");
+				String userPassword= jsonObject.getString("PW");
 				mainServer.checkLogin(this, userId, userPassword);
 				break;
 			case "registerMember":
@@ -84,7 +84,16 @@ public class SocketClient {
 				String regPw = jsonObject.getString("regPassword");
 				mainServer.registerMember(this, regId, regPw);
 				break;
-			case "passwordSearch":
+			case "createRoom":
+				String roomName = jsonObject.getString("RoomName");
+				chatName = jsonObject.getString("chatName");
+				System.out.println(this.chatName);
+				mainServer.createRoom(this, roomName);
+				break;
+			case "whisper":
+				String targetName = jsonObject.getString("target");
+				String whispermessage = jsonObject.getString("message");
+				roomManager.whisper(this, targetName, whispermessage);
 		}
 	}
 	
@@ -95,7 +104,8 @@ public class SocketClient {
 	}
 	public void enterRoom(RoomManager roomManager)
 	{
-		
+		this.roomManager = roomManager;
+		System.out.println("sc enterroom" + this.roomManager);
 	}
 
 }

@@ -27,6 +27,7 @@ public class RoomManager
 		roomClients.put(key, socketClient);
 		System.out.println("입장: " + key);
 		System.out.println("현재 채팅자 수: " + roomClients.size() + "\n");
+		
 	}
 
 	//메소드: 클라이언트 연결 종료시 SocketClient 제거
@@ -50,9 +51,9 @@ public class RoomManager
 		root.put("chatName", sender.chatName);
 		root.put("message", message);
 		//스트림 통해서 전달
-		roomClients.values().stream()
-		.filter(socketClient -> socketClient !=sender)
-		.forEach(socketClient->socketClient.send(root.toString()));
+		
+		roomClients.values().stream().forEach(socketClient->socketClient.send(root.toString()));
+		
 	}
 	
 	public void whisper(SocketClient sender, String targetName,String message)

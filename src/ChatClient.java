@@ -9,7 +9,7 @@ import java.util.Scanner;
 import org.json.JSONObject;
 
 enum STATE {
-	DEFAULT, LOGIN, SELECTROOM
+	DEFAULT, LOGIN, SELECTROOM,CHATTING
 }
 
 public class ChatClient {
@@ -18,7 +18,6 @@ public class ChatClient {
 	Socket socket;
 	DataInputStream dis;
 	DataOutputStream dos;
-	String chatName;
 
 	// 서버 연결
 	public void connect() throws IOException {
@@ -33,7 +32,12 @@ public class ChatClient {
 		Thread thread = new Thread(() -> {
 			try {
 				while (true) {
-
+					String json = dis.readUTF();
+					JSONObject root = new JSONObject(json);
+					String clientIp = root.getString("clientIp");
+					String chatName = root.getString("chatName");
+					String message = root.getString("message");
+					System.out.println("<" + chatName + "@" + clientIp + "> " + message);
 				}
 			} catch (Exception e1) {
 				System.out.println("[클라이언트] 서버와 끊어졌습니다.");
@@ -59,7 +63,6 @@ public class ChatClient {
 
 		try {
 			ChatClient chattingClient = new ChatClient();
-			chattingClient.connect();
 
 			boolean stopLogin = false;
 
@@ -76,6 +79,9 @@ public class ChatClient {
 				case SELECTROOM: {
 				}
 					break;
+				case CHATTING:{
+					chattingClient.chattingScreen();
+				}break;
 				}
 			}
 		} catch (Exception e) {
@@ -168,7 +174,7 @@ public class ChatClient {
 		}
 	}
 
-	private void newRoom(Scanner scanner) {
+	private void createRoom(Scanner scanner) {
 		// 메소드 호출
 		// 새로운 채팅방
 
@@ -177,26 +183,31 @@ public class ChatClient {
 		// return String user_id
 
 		try {
-			String id;
-
+			String roomName;
+			String chatName;
 			connect();
 
 			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
+			System.out.println("방제: ");
+			roomName =scanner.nextLine();
+			System.out.println("채팅 닉네임을 입력해주세요");
+			chatName = scanner.nextLine();
+			
 
 			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("Id", id);
-			jsonObject.put("command", "newRoom");
+			jsonObject.put("RoomName",roomName);
+			jsonObject.put("chatName", chatName);
+			jsonObject.put("command", "createRoom");
 			send(jsonObject.toString());
-
+			
+			enterRoom(roomName);
 
 		} catch (Exception e) {
 
 		}
 	}
 
-	private void incoming(Scanner scanner) {
+	private void enterRoomCommand(Scanner scanner) {
 		// 채팅 목록 생성
 		// 목록만 보이게
 		// 목록 + 채팅방 입장
@@ -214,16 +225,16 @@ public class ChatClient {
 		// 3. 이 두개를 다시 서버에 보낸다.
 
 		try {
-			String id;
+			String roomName;
 
 			connect();
 
 			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
+			System.out.println("방제 : ");
+			roomName = scanner.nextLine();
 
 			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("Id", id);
+			jsonObject.put("roomName", roomName);
 			jsonObject.put("command", "income");
 			send(jsonObject.toString());
 
@@ -353,7 +364,7 @@ public class ChatClient {
 			jsonObject.put("PW", pw);
 			jsonObject.put("command", "checkLogin");
 			send(jsonObject.toString());
-
+			System.out.println("보냄");
 			if (isRightId() == true) {
 				// 로그인 성공 시 세컨메뉴 진입
 				login = STATE.LOGIN;
@@ -363,7 +374,7 @@ public class ChatClient {
 				// 로그인 실패 시 로그인 화면 유지
 				System.out.println("로그인 실패했습니다.");
 			}
-
+			
 			unconnect();
 		} catch (IOException e) {
 
@@ -412,10 +423,10 @@ public class ChatClient {
 		String menuNum = scanner.nextLine();
 		switch (menuNum) {
 		case "1":
-			this.incoming(scanner);
+			this.enterRoomCommand(scanner);
 			break;
 		case "2":
-			this.newRoom(scanner);
+			this.createRoom(scanner);
 			break;
 		case "3":
 			this.modifyMemberInfo(scanner);
@@ -430,12 +441,45 @@ public class ChatClient {
 			break;
 		}
 	}
+	
+	private void chattingScreen()
+	{
+		Scanner scanner = new Scanner(System.in);
+		JSONObject jsonObject;
+		try
+		{
+			String message = scanner.nextLine();
+			if(message.toLowerCase().equals("q"))
+			{
+				login = STATE.LOGIN;
+				//룸매니저에서 아웃처리,방 선택 화면으로 
+			}
+			else if(message.indexOf("@") ==0)
+			{
+				send(whisper(message).toString());
+			}
+			else
+			{
+				jsonObject = new JSONObject();
+				jsonObject.put("command", "message");
+				jsonObject.put("data", message);
+				send(jsonObject.toString());
+			}
+			
+			
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
+		
+	}
 
 	public boolean isRightId() {
 		try {
 			String json = dis.readUTF();
 			JSONObject root = new JSONObject(json);
 			boolean isRightInfo = Boolean.parseBoolean(root.getString("serverResponse"));
+			System.out.println(isRightInfo);
 			return isRightInfo;
 
 		} catch (Exception e) {
@@ -464,5 +508,28 @@ public class ChatClient {
 		} catch (Exception e) {
 			return false;
 		}
+	}
+	
+	public void enterRoom(String roomName)
+	{
+		login = STATE.CHATTING;
+		System.out.println();
+		
+		System.out.println(roomName + "에 입장 하셨습니다");
+		System.out.println("Q키를 누르면 채팅방을 나갈 수 있습니다.");
+	}
+	
+	private JSONObject whisper(String message)
+	{
+		int pos = message.indexOf(" ");
+		String target = message.substring(1,pos);
+		message = "귓속말: " + message.substring(pos + 1);
+		
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("target", target);
+		jsonObject.put("message", message);
+		jsonObject.put("command", "whisper");
+		
+		return jsonObject;
 	}
 }

@@ -54,17 +54,18 @@ public class MainServer
 		Thread thread = new Thread(()->{
 			try
 			{
-				
 				while(true)
 				{
 					Socket socket = serverSocket.accept();
 					SocketClient socketClient = new SocketClient(this,socket);
+					System.out.println("[서버] 클라이언트 접속");
 				}
 			} catch (IOException e)
 			{
 				// TODO: handle exception
 			}
 		});
+		thread.start();
 	}
 	
 	public void stop() {
@@ -77,11 +78,13 @@ public class MainServer
 	}		
 	
 	
-	public void createRoom(String roomName,SocketClient socketClient)
+	public void createRoom(SocketClient sender, String roomName)
 	{
 		//클라이언트 측에서 요청 받아 방 개설
 		//방 만든뒤 map에 추가,
-		roomList.put(roomName,new RoomManager(this,socketClient,roomName));
+		roomList.put(roomName,new RoomManager(this,sender,roomName));
+		sender.enterRoom(roomList.get(roomName));
+	
 	}
 	public void deleteRoom(String roomName)
 	{
