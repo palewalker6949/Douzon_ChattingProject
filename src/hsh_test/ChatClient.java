@@ -8,6 +8,8 @@ import java.util.Scanner;
 
 import org.json.JSONObject;
 
+enum SCENESTATE{}
+
 public class ChatClient {
 	//필드
 	Socket socket;
@@ -170,5 +172,10 @@ public class ChatClient {
 			e.printStackTrace();
 			System.out.println("[클라이언트] 서버 연결 안됨");
 		}
+	}
+	
+	public void scene()
+	{
+		
 	}
 }

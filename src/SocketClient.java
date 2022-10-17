@@ -99,7 +99,7 @@ public class SocketClient {
 	
 	void exitAlarm()
 	{
-		roomManager.sendToAll(this, "나가셨습니다.");
+		//roomManager.sendToAll(this, "나가셨습니다.");
 		//roomManager.removeSocketClient(this);
 	}
 	public void enterRoom(RoomManager roomManager)
