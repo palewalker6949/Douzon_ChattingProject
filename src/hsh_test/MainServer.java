@@ -125,6 +125,8 @@ public class MainServer
 		sender.send(root.toString());
 	}
 	
+	
+	
 	public void editProfile()
 	{
 		//개인 정보 수정
@@ -139,6 +141,23 @@ public class MainServer
 	{
 		
 	}
+	
+	public void enterServer(SocketClient socketClient) 
+	{
+		String key = socketClient.chatName + "@" + socketClient.clientIp;
+		clients.put(key, socketClient);
+		System.out.println("입장: " + key);
+		System.out.println("현재 채팅자 수: " + clients.size() + "\n");
+	}
+
+	public void leaveServer(SocketClient socketClient)
+	{
+		String key = socketClient.chatName + "@" + socketClient.clientIp;
+		clients.remove(key);
+		System.out.println("나감: " + key);
+		System.out.println("현재 채팅자 수: " + clients.size() + "\n");
+		
+	}		
 	
 	
 }

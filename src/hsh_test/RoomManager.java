@@ -17,11 +17,11 @@ public class RoomManager
 	{
 		this.mainServer = mainServer;
 		this.roomName = roomName;
-		addSocketClient(socketClient);
+		enterRoom(socketClient);
 	}
 
 	
-	public void addSocketClient(SocketClient socketClient) 
+	public void enterRoom(SocketClient socketClient) 
 	{
 		String key = socketClient.chatName + "@" + socketClient.clientIp;
 		roomClients.put(key, socketClient);
@@ -30,7 +30,7 @@ public class RoomManager
 	}
 
 	//메소드: 클라이언트 연결 종료시 SocketClient 제거
-	public void removeSocketClient(SocketClient socketClient)
+	public void leaveRoom(SocketClient socketClient)
 	{
 		String key = socketClient.chatName + "@" + socketClient.clientIp;
 		roomClients.remove(key);
