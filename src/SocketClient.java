@@ -10,16 +10,17 @@ import org.json.JSONObject;
 
 public class SocketClient {
 	//필드
-	ChatServer chatServer;
+	MainServer mainServer;
 	Socket socket;
 	DataInputStream dis;
 	DataOutputStream dos;
 	String clientIp;	
 	String chatName;
+	RoomManager roomManager;
 	//생성자
-	public SocketClient(ChatServer chatServer, Socket socket) {
+	public SocketClient(MainServer mainServer, Socket socket) {
 		try {
-			this.chatServer = chatServer;
+			this.mainServer = mainServer;
 			this.socket = socket;
 			this.dis = new DataInputStream(socket.getInputStream());
 			this.dos = new DataOutputStream(socket.getOutputStream());
@@ -31,7 +32,7 @@ public class SocketClient {
 	}	
 	//메소드: JSON 받기
 	public void receive() {
-		chatServer.threadPool.execute(() -> {
+		mainServer.threadPool.execute(() -> {
 			try {
 				while(true) {
 					CommandForServer();
@@ -66,22 +67,22 @@ public class SocketClient {
 		switch(command) {
 			case "incoming":
 				this.chatName = jsonObject.getString("data");
-				chatServer.sendToAll(this, "들어오셨습니다.");
-				chatServer.addSocketClient(this);
+				roomManager.sendToAll(this, "들어오셨습니다.");
+				roomManager.enterRoom(null);
 				break;
 			case "message":
 				String message = jsonObject.getString("data");
-				chatServer.sendToAll(this, message);
+				roomManager.sendToAll(this, message);
 				break;
 			case "checkLogin":
 				String userId = jsonObject.getString("id");
 				String userPassword= jsonObject.getString("password");
-				chatServer.checkIdPass(this,userId, userPassword);
+				mainServer.checkLogin(this, userId, userPassword);
 				break;
 			case "registerMember":
 				String regId = jsonObject.getString("regId");
 				String regPw = jsonObject.getString("regPassword");
-				chatServer.registerMember(this, regId, regPw);
+				mainServer.registerMember(this, regId, regPw);
 				break;
 			case "passwordSearch":
 		}
@@ -89,8 +90,12 @@ public class SocketClient {
 	
 	void exitAlarm()
 	{
-		chatServer.sendToAll(this, "나가셨습니다.");
-		chatServer.removeSocketClient(this);
+		roomManager.sendToAll(this, "나가셨습니다.");
+		//roomManager.removeSocketClient(this);
+	}
+	public void enterRoom(RoomManager roomManager)
+	{
+		
 	}
 
 }

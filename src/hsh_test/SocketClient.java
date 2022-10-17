@@ -68,7 +68,7 @@ public class SocketClient {
 			case "incoming":
 				this.chatName = jsonObject.getString("data");
 				roomManager.sendToAll(this, "들어오셨습니다.");
-				roomManager.addSocketClient(this);
+				roomManager.enterRoom(null);
 				break;
 			case "message":
 				String message = jsonObject.getString("data");
@@ -91,7 +91,7 @@ public class SocketClient {
 	void exitAlarm()
 	{
 		roomManager.sendToAll(this, "나가셨습니다.");
-		roomManager.removeSocketClient(this);
+		//roomManager.removeSocketClient(this);
 	}
 	public void enterRoom(RoomManager roomManager)
 	{
