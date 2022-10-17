@@ -19,6 +19,7 @@ public class ChatClient {
 	DataInputStream dis;
 	DataOutputStream dos;
 	String chatName;
+	int a;
 
 	// 서버 연결
 	public void connect() throws IOException {
