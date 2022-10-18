@@ -4,6 +4,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -22,6 +23,10 @@ public class ChatClient {
 	String chatName;
 	String id;
 	String pw;
+	String name;
+	String gender;
+	String phone;
+	String chatRoomName;
 	static Boolean stopLogin;
 	static Scanner scanner;
 
@@ -121,7 +126,7 @@ public class ChatClient {
 
 			System.out.println("탈퇴가 완료 되었습니다.");
 		} catch (Exception e) {
-			System.out.println(e);
+			System.out.println("ID를 확인하세요.");
 		}
 	}
 
@@ -143,14 +148,12 @@ public class ChatClient {
 			// TODO 아이디가 맞으면 비번, 이름, 성별, 전화번호 업데이트
 
 			try {
-				String id;
-				String pw;
-				String name;
-				String gender;
-				String phone;
 
 				connect();
 
+				System.out.println("Id: ");
+				id = scanner.nextLine();
+				scanner = new Scanner(System.in);
 				System.out.println("Pw: ");
 				pw = scanner.nextLine();
 				scanner = new Scanner(System.in);
@@ -191,6 +194,9 @@ public class ChatClient {
 		// 2. 서버에 전달
 		// return String user_id
 
+		Map<String, String> map = new HashMap<>();
+		map.put("chatRoomName", "javaStudyRoom");
+
 		try {
 			String chatRoomName;
 
@@ -206,6 +212,12 @@ public class ChatClient {
 
 			unconnect();
 
+			if (chatRoomName.equals("javaStudyRoom")) {
+
+				System.out.println(chatRoomName + "방이 생성되었습니다.");
+			} else {
+				System.out.println("방 이름을 확인해주세요.");
+			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -213,8 +225,8 @@ public class ChatClient {
 
 	private void incoming(Scanner scanner) {
 
-		Map<String, String> map = new HashMap<>();
-		map.put("hong", "1234");
+//		Map<String, String> map = new HashMap<>();
+//		map.put("hong", "1234");
 
 		// 채팅 목록 생성
 		// 목록만 보이게
@@ -233,18 +245,16 @@ public class ChatClient {
 		// 3. 이 두개를 다시 서버에 보낸다.
 
 		try {
-			int chatRoomNum;
-			String id;
-
 			connect();
 
 			System.out.println("----- 채팅방 목록 -----");
 			System.out.println("~");
-			System.out.println("채팅방 번호: ");
-			chatRoomNum = Integer.parseInt(scanner.nextLine());
+			System.out.println("채팅방 선택: ");
+			chatRoomName = scanner.nextLine();
+//			chatRoomNum = Integer.parseInt(scanner.nextLine());
 
 			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("chatRoomNum", chatRoomNum);
+			jsonObject.put("chatRoomName", chatRoomName);
 			jsonObject.put("command", "income");
 			send(jsonObject.toString());
 
@@ -253,11 +263,11 @@ public class ChatClient {
 			if (isRightId() != true) {
 				// 채팅방 목록 중 들어가고자 하는 채팅방 선택
 				// TODO 채팅방 목록 선택
-				System.out.println(ChatClient.this.id + "님이 입장했습니다.");
+				System.out.println(chatRoomName + "방에 입장했습니다.");
 			}
 
 		} catch (Exception e) {
-			System.out.println(e);
+			System.out.println("채팅방을 다시 선택해주세요.");
 		}
 
 	}
@@ -273,8 +283,7 @@ public class ChatClient {
 		map.put("hong", "1234");
 
 		try {
-			String id;
-			// String pw;
+
 			connect();
 
 			System.out.println("Id: ");
@@ -368,8 +377,7 @@ public class ChatClient {
 		map.put("hong", "1234");
 
 		try {
-			String id;
-			String pw;
+
 			connect();
 
 			System.out.println("Id: ");
@@ -383,21 +391,23 @@ public class ChatClient {
 			jsonObject.put("command", "checkLogin");
 			send(jsonObject.toString());
 
+			map.get(id).equals(pw);
 			if (map.get(id).equals(pw)) {
 
 				// if (isRightId() == true) {
 				// 로그인 성공 시 세컨메뉴 진입
-				login = STATE.LOGIN;
 				System.out.println("로그인 성공했습니다.");
+				login = STATE.LOGIN;
 
 			} else {
 				// 로그인 실패 시 로그인 화면 유지
-				login = STATE.DEFAULT;
 				System.out.println("로그인 실패했습니다.");
-				
+				login = STATE.DEFAULT;
+
 			}
 
 			unconnect();
+
 		} catch (IOException e) {
 			System.out.println(e);
 		}
@@ -405,61 +415,78 @@ public class ChatClient {
 	}
 
 	private void defaultScreen(Scanner scanner) {
+		try {
+			stopLogin = false;
+			while (false == stopLogin) {
 
-		System.out.println();
-		System.out.println("welcome CHAT");
-		System.out.println("1. 로그인");
-		System.out.println("2. 회원가입");
-		System.out.println("3. 비밀번호찾기");
-		System.out.println("q. 종료");
-		System.out.print("메뉴 선택 => ");
-		String menuNum = scanner.nextLine();
-		switch (menuNum) {
-		case "1":
-			this.login(scanner);
-			break;
-		case "2":
-			this.joinMember(scanner);
-			break;
-		case "3":
-			this.passwdSearch(scanner);
-			break;
-		case "q":
-			stopLogin = true;
-			System.out.println("프로그램이 종료되었습니다.");
-			break;
+				System.out.println();
+				System.out.println("welcome CHAT");
+				System.out.println("1. 로그인");
+				System.out.println("2. 회원가입");
+				System.out.println("3. 비밀번호찾기");
+				System.out.println("q. 종료");
+				System.out.print("메뉴 선택 => ");
+				String menuNum = scanner.nextLine();
+				switch (menuNum) {
+				case "1":
+					this.login(scanner);
+					break;
+				case "2":
+					this.joinMember(scanner);
+					break;
+				case "3":
+					this.passwdSearch(scanner);
+					break;
+				case "q":
+					stopLogin = true;
+					System.out.println("프로그램이 종료되었습니다.");
+					break;
+				}
+				break;
+			}
+
+		} catch (Exception e) {
+
 		}
 
 	}
 
 	private void loginScreen(Scanner scanner) {
 
-		System.out.println();
-		System.out.println("hello CHAT");
-		System.out.println("1. 채팅방 입장");
-		System.out.println("2. 채팅방 생성");
-		System.out.println("3. 정보수정");
-		System.out.println("4. 회원탈퇴");
-		System.out.println("q. 종료");
-		System.out.print("메뉴 선택 => ");
-		String menuNum = scanner.nextLine();
-		switch (menuNum) {
-		case "1":
-			this.incoming(scanner);
-			break;
-		case "2":
-			this.createRoom(scanner);
-			break;
-		case "3":
-			this.modifyMemberInfo(scanner);
-			break;
-		case "4":
-			this.withdrawalMember(scanner);
-			break;
-		case "q":
-			stopLogin = true;
-			System.out.println("프로그램이 종료되었습니다.");
-			break;
+		try {
+			stopLogin = false;
+			while (false == stopLogin) {
+				System.out.println();
+				System.out.println("hello CHAT");
+				System.out.println("1. 채팅방 입장");
+				System.out.println("2. 채팅방 생성");
+				System.out.println("3. 정보수정");
+				System.out.println("4. 회원탈퇴");
+				System.out.println("q. 종료");
+				System.out.print("메뉴 선택 => ");
+				String menuNum = scanner.nextLine();
+				switch (menuNum) {
+				case "1":
+					this.incoming(scanner);
+					break;
+				case "2":
+					this.createRoom(scanner);
+					break;
+				case "3":
+					this.modifyMemberInfo(scanner);
+					break;
+				case "4":
+					this.withdrawalMember(scanner);
+					break;
+				case "q":
+					stopLogin = true;
+					System.out.println("프로그램이 종료되었습니다.");
+					break;
+				}
+				break;
+			}
+		} catch (Exception e) {
+
 		}
 
 	}
@@ -507,6 +534,7 @@ public class ChatClient {
 			String chatList = root.getString("serverResponse");
 			return chatList;
 		} catch (Exception e) {
+
 			System.out.println("리스트 목록: ");
 			return chatList();
 		}
