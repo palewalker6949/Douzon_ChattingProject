@@ -59,7 +59,18 @@ public class SocketClient {
 							String regPw = jsonObject.getString("regPassword");
 							chatServer.registerMember(this, regId, regPw);
 							break;
-					}
+						case "createRoom":
+							String roomName = jsonObject.getString("roomName");
+							chatName = jsonObject.getString("chatName");
+							chatServer.addSocketClient(this);
+							chatServer.createRoom(this,roomName);
+							break;
+						case "whisper":
+							String target = jsonObject.getString("target");
+							String whisperMessage = jsonObject.getString("data");
+							chatServer.whisper(this, target, whisperMessage);
+							break;
+							}
 				}
 			} catch(IOException e) {
 				chatServer.sendToAll(this, "나가셨습니다.");
