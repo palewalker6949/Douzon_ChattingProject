@@ -1,468 +1,458 @@
 package hsh_test;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Base64;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
-enum STATE {
-	DEFAULT, LOGIN, SELECTROOM
-}
+enum SCENESTATE{DEFAULT, LOGIN, ROOMSELECT,CHATTING}
 
 public class ChatClient {
-	private static STATE login = STATE.DEFAULT;
-	private static STATE joinmember = STATE.DEFAULT;
+	//필드
 	Socket socket;
 	DataInputStream dis;
 	DataOutputStream dos;
-	String chatName;
-
-	// 서버 연결
-	public void connect() throws IOException {
+	String chatName;	
+	static boolean isCheckLogin = false;
+	Scanner scanner;
+	static boolean isRun;
+	static SCENESTATE curState = SCENESTATE.DEFAULT;
+	static boolean isEnterChatting = false;
+	
+	//메소드: 서버 연결
+	public  void connect() throws IOException {
 		socket = new Socket("localhost", 50001);
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
-		System.out.println("[클라이언트] 서버에 연결되었습니다.");
-	}
-
-	// JSON 받기
+		System.out.println("[클라이언트] 서버에 연결됨");		
+	}	
+	//메소드: JSON 받기
 	public void receive() {
 		Thread thread = new Thread(() -> {
 			try {
-				while (true) {
-
+				while(true) {
+					String json = dis.readUTF();
+					JSONObject root = new JSONObject(json);
+					
+					String clientIp = root.getString("clientIp");
+					String chatName = root.getString("chatName");
+					String message = root.getString("message");
+					System.out.println("<" + chatName + "@" + clientIp + "> " + message);
 				}
-			} catch (Exception e1) {
-				System.out.println("[클라이언트] 서버와 끊어졌습니다.");
+			} catch(Exception e1) {
+				System.out.println("[클라이언트] 서버 연결 끊김");
 				System.exit(0);
 			}
 		});
 		thread.start();
-	}
+	}	
+	
 
-	// JSON 보내기
+	//메소드: JSON 보내기
 	public void send(String json) throws IOException {
 		dos.writeUTF(json);
 		dos.flush();
-	}
-
-	// 서버 연결 종료
-	public void unconnect() throws IOException {
+	}	
+	//메소드: 서버 연결 종료
+	public void disconnect() throws IOException {
 		socket.close();
-	}
-
-	// 메인
-	public static void main(String[] args) {
-
-		try {
-			ChatClient chattingClient = new ChatClient();
-			chattingClient.connect();
-
-			boolean stopLogin = false;
-
-			while (false == stopLogin) {
-				switch (login) {
-				case DEFAULT: {
-					chattingClient.defaultScreen();
-				}
-					break;
-				case LOGIN: {
-					chattingClient.loginScreen();
-				}
-					break;
-				case SELECTROOM: {
-				}
-					break;
-				}
+	}	
+	//메소드: 메인
+	public static void main(String[] args) {		
+		
+		try {			
+			ChatClient chatClient = new ChatClient();
+			Scanner scanner = new Scanner(System.in);
+			while(false == isRun) {
+				switch (curState)
+					{
+						case DEFAULT :
+						{
+							chatClient.defaultScene(scanner);
+						}break;
+						case LOGIN :
+						{
+							chatClient.loginScene(scanner);
+						}break;
+						case CHATTING :
+						{
+							chatClient.chattingScene(scanner);
+						}
+					}
 			}
-		} catch (Exception e) {
-
-		}
-
-	}
-
-	private void withdrawalMember(Scanner scanner) {
-		// ID를 보내고 그 해당 내용을 삭제할 수 있게
-		// 회원 탈퇴기능
-
-		// 1. 내아이디 찾아와서
-		// 2. 서버로 보내고 데이터 삭제
-
-		try {
-			String id;
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("ID", id);
-			jsonObject.put("command", "remove");
-			send(jsonObject.toString());
-
-			unconnect();
-
-		} catch (Exception e) {
-			System.out.println(e);
+			
+//		
+		} catch(Exception e) {
+			e.printStackTrace();
+			System.out.println("[클라이언트] 서버 연결 안됨");
 		}
 	}
-
-	private void modifyMemberInfo(Scanner scanner) {
-		// 수정 할 내용 입력 받기
-		// 서버로 보내기
-		// 단발성으로 끝낼 것
-		// connect disconnect;
-
-		// 메뉴선택 3번
-
-		// id , 비번, 이름, 성별, 전화번호 (회원가입시 필요한 정보)
-		// 비번, 이름, 성별, 전화번호 (회원수정 가능한 정보)
-
-		// 1. 내아이디 찾아와서
-		// 새로입력 받는 비번, 이름, 성별, 전화번호를 항상 다 서버로 보낸다
-
-		// 변경이 없는 항목은 서비스단에서 걸러내고 나머지 업데이트
-
-		try {
-			String id;
-			String pw;
-			String name;
-			String gender;
-			String phone;
-
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Pw: ");
-			pw = scanner.nextLine();
-			scanner = new Scanner(System.in);
-			System.out.println("Name: ");
-			name = scanner.nextLine();
-			scanner = new Scanner(System.in);
-			System.out.println("gender: ");
-			gender = scanner.nextLine();
-			scanner = new Scanner(System.in);
-			System.out.println("phone");
-			phone = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("PW", pw);
-			jsonObject.put("Name", name);
-			// TODO 여기 name에서 왜 빨간줄이 생겼는지 모르겠습니다.
-			// 처음에 작성할때 pw, gender, phone, address로 만들었었고
-			// 나중에 address를 삭제하고, name을 추가했는데 그 뒤로는 name에 빨간줄이 안사라집니다....
-			// String name = null; 처리하면 사라지기는 하던데 다른 방법은 없을까요?
-			jsonObject.put("Gender", gender);
-			jsonObject.put("Phone", phone);
-			jsonObject.put("command", "modify");
-			send(jsonObject.toString());
-
-			unconnect();
-
-		} catch (Exception e) {
-
-		}
-	}
-
-	private void newRoom(Scanner scanner) {
-		// 메소드 호출
-		// 새로운 채팅방
-
-		// 1. 내아이디 찾아와서
-		// 2. 서버에 전달
-		// return String user_id
-
-		try {
-			String id;
-
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("Id", id);
-			jsonObject.put("command", "newRoom");
-			send(jsonObject.toString());
-
-
-		} catch (Exception e) {
-
-		}
-	}
-
-	private void incoming(Scanner scanner) {
-		// 채팅 목록 생성
-		// 목록만 보이게
-		// 목록 + 채팅방 입장
-
-		// 채팅방 별로 시퀀스가 있음
-		// 대화도 채팅방 시퀀스 따라간다.
-
-		// 0.0. 채팅목록 요청
-		// 0. 서버에서 전달받은 채팅방 목록 화면에 표시
-
-		// 채팅방 선택
-
-		// 1. 내아이디 찾아와서
-		// 2. 입장하고자하는 채팅방 시퀀스도 찾아온다.
-		// 3. 이 두개를 다시 서버에 보낸다.
-
-		try {
-			String id;
-
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("Id", id);
-			jsonObject.put("command", "income");
-			send(jsonObject.toString());
-
-
-			if (true) {
-				// 채팅방 목록 중 들어가고자 하는 채팅방 선택
-				// TODO 채팅방 목록 선택
-
-			}
-
-		} catch (Exception e) {
-		}
-
-	}
-
-	private void passwdSearch(Scanner scanner) {
-		// ID를 알고 있어야 함 Id 가 키값.
-		// 검증만 "hong"으로 // 예시 ) infoDb.put("hong", "1234");
-
-		// 직접 입력한 ID를 서번에 전달 하면
-		// 리턴으로 받은 비밀번호를 표시
-
-		try {
-			String id;
-			String pw;
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-
-			// 에러처리
-			// id를 잘못 입력한 경우
-			// 비밀번호 데이터가 ""이거나 null인 경우
-			System.out.println("잘못된 ID 이거나 비밀번호를 찾을 수 없습니다.");
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("ID", id);
-			jsonObject.put("command", "pwSearch");
-			send(jsonObject.toString());
-			unconnect();
-
-			if (isRightPw() == true) {
-
-				// 비밀번호 찾기 성공 시 디폴트스크린 재진입
-				// 로그인 진행
-				joinmember = STATE.DEFAULT;
-				// TODO 가입한 회원의 비밀번호 보여주기
-				// 가입된 회원의 비밀번호를 알려주기
-				//System.out.println("Pw : " + pw);
-
-			} else {
-				// 비밀번호 찾기 실패 시 비밀번호찾기 화면 유지
-				System.out.println("정보를 찾을 수 없습니다.");
-			}
-
-		} catch (Exception e) {
-
-		}
-	}
-
-	private void joinMember(Scanner scanner) {
-		try {
-			String id;
-			String pw;
-			String name;
-			String gender;
-			String phone;
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-			System.out.println("Pw: ");
-			pw = scanner.nextLine();
-			System.out.println("Name: ");
-			name = scanner.nextLine();
-			System.out.println("gender: ");
-			gender = scanner.nextLine();
-			System.out.println("phone: ");
-			phone = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("ID", id);
-			jsonObject.put("PW", pw);
-			// TODO 위와 마찬가지로 String name = null; 처리하면 사라지던데
-			// 다른 방법은 없을까요?
-			jsonObject.put("Name", name);
-			jsonObject.put("Gender", gender);
-			jsonObject.put("Phone", phone);
-			jsonObject.put("command", "joinMem");
-			send(jsonObject.toString());
-
-			if (isJoinMember() == true) {
-				// true면 회원가입 완료
-				// 회원가입 성공 시 디폴트스크린 재진입
-				// 로그인 진행
-				joinmember = STATE.DEFAULT;
-				// id 체크 있냐 없냐
-				System.out.println("회원가입이 완료 되었습니다.");
-
-			} else {
-				// false면 중복된 아이디 있음
-				// 그 아이디로 가입 안돼
-				System.out.println("회원가입이 불가 합니다.");
-
-			}
-		} catch (Exception e) {
-		}
-
-	}
-
-	private void login(Scanner scanner) {
-		try {
-			String id;
-			String pw;
-			connect();
-
-			scanner = new Scanner(System.in);
-			System.out.println("Id: ");
-			id = scanner.nextLine();
-			System.out.println("Pw: ");
-			pw = scanner.nextLine();
-
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("ID", id);
-			jsonObject.put("PW", pw);
-			jsonObject.put("command", "checkLogin");
-			send(jsonObject.toString());
-
-			if (isRightId() == true) {
-				// 로그인 성공 시 세컨메뉴 진입
-				login = STATE.LOGIN;
-				System.out.println("로그인 성공했습니다.");
-
-			} else {
-				// 로그인 실패 시 로그인 화면 유지
-				System.out.println("로그인 실패했습니다.");
-			}
-
-			unconnect();
-		} catch (IOException e) {
-
-		}
-
-	}
-
-	private void defaultScreen() {
+	
+	public void defaultScene(Scanner scanner)
+	{
+		
 		System.out.println();
-		System.out.println("hello CHAT");
+		System.out.println();
 		System.out.println("1. 로그인");
 		System.out.println("2. 회원가입");
-		System.out.println("3. 비밀번호찾기");
-		System.out.println("q. 종료");
+		System.out.println("3. 비밀번호 찾기");
+		System.out.println("4. 채팅방 입장");
+		System.out.println("q. 프로그램 종료");
 		System.out.print("메뉴 선택 => ");
-		Scanner scanner = new Scanner(System.in);
+		 scanner = new Scanner(System.in);
 		String menuNum = scanner.nextLine();
-		switch (menuNum) {
+		switch(menuNum) {
 		case "1":
-			this.login(scanner);
+			login(scanner);
 			break;
 		case "2":
-			this.joinMember(scanner);
+			registerMember(scanner);
 			break;
 		case "3":
-			this.passwdSearch(scanner);
-			break;
-		case "q":
-			scanner.close();
-
-			System.out.println("프로그램이 종료되었습니다.");
-			break;
-		}
-	}
-
-	private void loginScreen() {
-		System.out.println();
-		System.out.println("hello CHAT");
-		System.out.println("1. 채팅방 입장");
-		System.out.println("2. 채팅방 생성");
-		System.out.println("3. 정보수정");
-		System.out.println("4. 회원탈퇴");
-		System.out.println("q. 종료");
-		System.out.print("메뉴 선택 => ");
-		Scanner scanner = new Scanner(System.in);
-		String menuNum = scanner.nextLine();
-		switch (menuNum) {
-		case "1":
-			this.incoming(scanner);
-			break;
-		case "2":
-			this.newRoom(scanner);
-			break;
-		case "3":
-			this.modifyMemberInfo(scanner);
+			passSearch();
 			break;
 		case "4":
-			this.withdrawalMember(scanner);
+			if(isCheckLogin)
+				enterRoom();
+			else
+				System.out.println("로그인을 먼저 해주세요");
 			break;
-		case "q":
+		case "Q", "q":
 			scanner.close();
-
-			System.out.println("프로그램이 종료되었습니다.");
+			isRun = true;
+			System.out.println("프로그램 종료됨");
 			break;
 		}
 	}
-
-	public boolean isRightId() {
-		try {
-			String json = dis.readUTF();
-			JSONObject root = new JSONObject(json);
-			boolean isRightInfo = Boolean.parseBoolean(root.getString("serverResponse"));
-			return isRightInfo;
-
-		} catch (Exception e) {
-			return false;
+	
+	public void loginScene(Scanner scanner)
+	{
+		System.out.println();
+		System.out.println();
+		System.out.println("1. 방 리스트 보기");
+		System.out.println("2. 채팅 방 생성");
+		System.out.println("3. 회원 탈퇴");
+		System.out.println("4. 정보 수정");
+		System.out.println("q. 프로그램 종료");
+		System.out.print("메뉴 선택 => ");
+		 scanner = new Scanner(System.in);
+		String menuNum = scanner.nextLine();
+		switch(menuNum) {
+		case "1":
+			login(scanner);
+			break;
+		case "2":
+			createRoom(scanner);
+			break;
+		case "3":
+			passSearch();
+			break;
+		case "4":
+			if(isCheckLogin)
+				enterRoom();
+			else
+				System.out.println("로그인을 먼저 해주세요");
+			break;
+		case "Q", "q":
+			scanner.close();
+			isRun = true;
+			System.out.println("프로그램 종료됨");
+			break;
 		}
 	}
-
-	public boolean isRightPw() {
-		try {
+	
+	public void chattingScene(Scanner scanner)
+	{
+		String message;
+		
+		if(isEnterChatting == false)
+		{
+			receive();
+			isEnterChatting = true;
+			System.out.println("======================");
+			System.out.println("채팅방 입장");
+			System.out.println("======================");
+		}
+		
+		
+		message = scanner.nextLine();
+		messageCheck(message);
+		
+		try
+		{
+			
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
+		
+	}
+	
+	
+	
+	public void login(Scanner scanner)
+	{
+		try
+		{
+			String id;
+			String password;
+			
+			
+			System.out.println("로그인");
+			System.out.print("아이디: ");
+			id = scanner.nextLine();
+			System.out.print("비밀번호: ");
+			password = scanner.nextLine();
+			
+			connect();
+			
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("command", "checkLogin");
+			jsonObject.put("id", id);
+			jsonObject.put("password", password);
+			
+			send(jsonObject.toString());
+			
+			loginResponse();
+			
+			disconnect();
+			
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
+	}
+	
+	public void loginResponse()
+	{
+		try
+		{
 			String json = dis.readUTF();
 			JSONObject root = new JSONObject(json);
-			boolean isRightInfo = Boolean.parseBoolean(root.getString("serverResponse"));
-			return isRightInfo;
-		} catch (Exception e) {
-			return false;
+			boolean isRightInfo = root.getBoolean("isRightInfo");
+			
+			if(isRightInfo)
+			{
+				isCheckLogin = true;
+				curState = SCENESTATE.LOGIN;
+				System.out.println("로그인에 성공했습니다");
+			}
+			else
+			{
+				isCheckLogin =false;
+				System.out.println("올바른 ID/Password가 아닙니다");
+			}
+			
+		} catch (IOException e)
+		{
+			// TODO: handle exception
 		}
-
+		
+		
 	}
+	
 
-	public boolean isJoinMember() {
-		try {
+	public void registerMember(Scanner scanner)
+	{
+		
+	}
+	
+	public void passSearch()
+	{
+		
+	}
+	
+	public void enterRoom()
+	{
+		
+	}
+	
+	
+	
+	public void createRoom(Scanner scanner)
+	{
+		try
+		{
+			String roomName;
+			String chatName;
+			
+			
+			System.out.println("방 만들기");
+			System.out.print("방제: ");
+			roomName = scanner.nextLine();
+			System.out.print("채팅 닉네임: ");
+			chatName = scanner.nextLine();
+			
+			connect();
+			
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("command", "createRoom");
+			jsonObject.put("roomName", roomName);
+			jsonObject.put("chatName", chatName);
+			
+			send(jsonObject.toString());
+			
+			createRoomResponse();
+			
+		} catch (Exception e)
+		{
+			// TODO: handle exception
+		}
+	}
+	
+	public void createRoomResponse()
+	{
+		try
+		{
 			String json = dis.readUTF();
 			JSONObject root = new JSONObject(json);
-			boolean isJoin = Boolean.parseBoolean(root.getString("serverResponse"));
-			return isJoin;
-		} catch (Exception e) {
-			return false;
+			String roomName = root.getString("roomName");
+			
+			System.out.println(roomName + "에 입장하셨습니다");
+			System.out.println("q키를 누르면 퇴장합니다");
+			
+			curState = SCENESTATE.CHATTING;
+		} catch (IOException e)
+		{
+			// TODO: handle exception
+		}
+		
+	}
+	
+	public void messageCheck(String message)
+	{
+		try
+		{
+			if(message.indexOf("/") != -1)
+			{
+				String[] messages = message.split(" ");
+				JSONObject jsonObject = new JSONObject();
+				jsonObject = new JSONObject();
+				if(messages[0].equals("/w"))//귓속말
+				{
+					jsonObject.put("command", "whisper");
+					jsonObject.put("target", messages[1]);
+					jsonObject.put("data", messages[2]);
+				}
+				//파일목록,파일업로드,파일다운로드 키워드 체크
+				
+				send(jsonObject.toString());
+			}
+			
+			else 
+			{
+				JSONObject jsonObject = new JSONObject();
+				jsonObject = new JSONObject();
+				jsonObject.put("command", "message");
+				jsonObject.put("data", message);
+				
+				send(jsonObject.toString());
+			}
+			
+		} catch (Exception e)
+		{
+			// TODO: handle exception
 		}
 	}
+	public ChatClient()
+	{
+		// TODO Auto-generated constructor stub
+	}public void fileUpload(Scanner scanner) throws JSONException {
+		try {
+			System.out.println("파일주소를 입력하세요:");
+			String fileName = scanner.next();
+
+			JSONObject jsonObject = new JSONObject();
+			File file = new File(fileName);
+			if (!file.exists()) {
+				System.out.println("파일이 존재 하지 않습니다");
+				return;
+			}
+			BufferedInputStream in = new BufferedInputStream(new FileInputStream(file));
+			byte[] data = new byte[(int) file.length()];
+			in.read(data);
+			in.close();
+			jsonObject.put("command", "fileUpload");
+			jsonObject.put("fileName", file.getName());
+			jsonObject.put("content", new String(Base64.getEncoder().encode(data)));
+
+			String json = jsonObject.toString();
+			connect();
+			send(json);
+
+			System.out.println("파일전송 완료");
+		} catch (UnknownHostException ue) {
+			System.out.println(ue.getMessage());
+		} catch (IOException ie) {
+			System.out.println(ie.getMessage());
+		}
+	}
+	 public void fileDownload() throws IOException {
+	    	ServerSocket serverSocket = new ServerSocket(7000);
+	    	
+	        System.out.println("서버 준비완료");
+	       
+	        Socket sock = serverSocket.accept();
+	    	
+	    	DataInputStream dis = new DataInputStream(sock.getInputStream());
+	    	String fileName = dis.readUTF();
+	    	
+	    	File f = new File("/Users/kimyoungwook/Desktop/test/"+fileName);
+	    	DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
+	    	dos.writeUTF(f.getName());
+	    	dos.flush();
+	    	
+	    	FileInputStream fis = new FileInputStream("/Users/kimyoungwook/Desktop/"+fileName);
+	    	if (fileName.contains("jpg")||fileName.contains("png")||fileName.contains("jpeg")) 
+	    	{Runtime.getRuntime().exec("/Users/kimyoungwook/Desktop/"+fileName);}
+	    	
+	    	int n = 0;
+	    	byte b[] = new byte[1024];
+	    	while ((n = fis.read(b)) != -1) {
+	    		dos.write(b, 0, n);
+	    	}
+
+	    	dos.close();
+	    	fis.close();
+	    	System.out.println("파일전송 완료");
+	    	sock.close();
+	    	
+	    		}
+//목록 조회 
+	public List<String> getFileList( Scanner scanner ) {
+		System.out.println("조회 하실 폴더 명을 입력하세요.");
+		String folderName = scanner.next();
+		String path = String.format("/Users/kimyoungwook/Desktop/"+ folderName); // 경로만들기
+
+		List<String> fileList = new LinkedList<>(); // 파일리스트들 만들기
+
+		File dir = new File(path);// 경로를 담은 파일 객체 만들기
+		File[] files = dir.listFiles(); // 디렉토리 경로에 있는 파일들을 배열에 담기
+
+		for (File f : files) { // 배열에서 파일 찾기
+			if (f.isFile()) {
+				fileList.add(f.getName());
+				// 있으면 보내준다. f.getName() 이름을 담아서 리스트에 넣어주기
+			} else if (!f.isFile()) {
+				break;
+				// 없으면 나가기.
+			}
+		}
+		System.out.println(fileList);
+		
+		return fileList; // 리스트 리턴해주기
+	}
+	
 }
