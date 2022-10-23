@@ -1,4 +1,6 @@
-package hsh_test;
+package chat;
+
+
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -8,11 +10,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class ChatServer {
@@ -21,6 +25,7 @@ public class ChatServer {
 	ExecutorService threadPool = Executors.newFixedThreadPool(100);
 	Map<String, SocketClient> clients = Collections.synchronizedMap(new HashMap<>());
 	Map<String, Map<String, SocketClient>> roomList = Collections.synchronizedMap(new HashMap<>());
+//	MemberRepository memberRepository = new MemberRepository();
 
 	//메소드: 서버 시작
 	public void start() throws IOException {
@@ -40,7 +45,7 @@ public class ChatServer {
 	}
 	//메소드: 클라이언트 연결시 SocketClient 생성 및 추가
 	public void addSocketClient(SocketClient socketClient) {
-		String key = socketClient.chatName + "@" + socketClient.clientIp;
+		String key = socketClient.getChatName() + "@" + socketClient.clientIp;
 		clients.put(key, socketClient);
 		System.out.println("입장: " + key);
 		System.out.println("현재 채팅자 수: " + clients.size() + "\n");
@@ -48,7 +53,7 @@ public class ChatServer {
 
 	//메소드: 클라이언트 연결 종료시 SocketClient 제거
 	public void removeSocketClient(SocketClient socketClient) {
-		String key = socketClient.chatName + "@" + socketClient.clientIp;
+		String key = socketClient.getChatName() + "@" + socketClient.clientIp;
 		clients.remove(key);
 		System.out.println("나감: " + key);
 		System.out.println("현재 채팅자 수: " + clients.size() + "\n");
@@ -57,25 +62,28 @@ public class ChatServer {
 	public void sendToAll(SocketClient sender, String message) {
 		JSONObject root = new JSONObject();
 		root.put("clientIp", sender.clientIp);
-		root.put("chatName", sender.chatName);
+		root.put("chatName", sender.getChatName());
 		root.put("message", message);
 		String json = root.toString();
 		System.out.println("채팅");
 		//스트림 통해서 전달
+		Map<String, SocketClient> chatRoom = roomList.get(sender.getRoomName());
+		//chatRoom으로는 왜 전송이 안되는지?
 		clients.values().stream()
 		.forEach(socketClient->socketClient.send(json));
-		
-		
 	}	
 	
 	public void whisper(SocketClient sender, String targetName,String message)
 	{
 		JSONObject root = new JSONObject();
 		root.put("clientIp", sender.clientIp);
-		root.put("chatName", sender.chatName + "님의 귓속말");
+		root.put("chatName", sender.getChatName() + "님의 귓속말");
 		root.put("message", message);
 		String json = root.toString();
 		System.out.println("귓속말");
+		Map<String, SocketClient> chatRoom = roomList.get(sender.getRoomName());
+		chatRoom.get(targetName).send(json);
+		
 		//스트림 통해서 전달
 //		clients.values().stream()
 //		.filter()
@@ -100,9 +108,14 @@ public class ChatServer {
 		
 	}
 	
-	public void registerMember(SocketClient sender,String id, String password)
+	public synchronized void registerMember(Member member)
 	{
-		
+//		try {
+//			memberRepository.insertMember(member);
+//		} catch (Member.ExistMember e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 	//메소드: 서버 종료
 	public void stop() {
@@ -126,7 +139,8 @@ public class ChatServer {
 			Scanner scanner = new Scanner(System.in);
 			while(true) {
 				String key = scanner.nextLine();
-				if(key.equals("q")) 	break;
+				if(key.equals("q")) 	
+					break;
 			}
 			scanner.close();
 			chatServer.stop();
@@ -135,38 +149,45 @@ public class ChatServer {
 		}
 	}
 	
-	public void enterRoom(SocketClient socketClient,String roomName)
+	public void enterRoom(SocketClient socketClient)
 	{
-		String key = socketClient.chatName + "@" + socketClient.clientIp;
+		String key = socketClient.getChatName() + "@" + socketClient.clientIp;
+		roomList.get(socketClient.getRoomName()).put(key,clients.get(key));
+	}
+	
+	public void leaveRoom(SocketClient sender)
+	{
+		String key = sender.getChatName() + "@" + sender.clientIp;
+		roomList.get(sender.getRoomName()).remove(key);
+		
+		if(roomList.get(sender.getRoomName()).size() <=0)
+		{
+			deleteRoom(sender.getRoomName());
+		}
 		
 	}
 	
-	public void leaveRoom(SocketClient socketClient)
+	public void createRoom(SocketClient sender)
 	{
 		
-	}
-	
-	public void createRoom(SocketClient sender,String roomName)
-	{
-		String key = sender.chatName + "@" + sender.clientIp;
-		Map<String, SocketClient> innerMap = Collections.synchronizedMap(new HashMap<>());
-		roomList.put(roomName, innerMap);
-		innerMap.put(key, clients.get(key));
+		roomList.put(sender.getRoomName(), new HashMap<>());
+		enterRoom(sender);
 		
 		JSONObject root = new JSONObject();
-		root.put("roomName",roomName);
-		System.out.println("닉네임: " + sender.chatName+", 방이름 : "+roomName + " 방 입장");
+		root.put("roomName",sender.getRoomName());
+		System.out.println("닉네임: " + sender.getChatName()+", 방이름 : "+sender.getRoomName() + " 방 입장");
 		for(String room : roomList.keySet())
 			System.out.println("현재 만들어져있는  방들:" +room);
 		sender.send(root.toString());
 	}
 	
-	public ArrayList<String> getRoomList()
+	public List<String> getChatRoomList() {
+        return roomList.keySet().stream().toList();
+    }
+	
+	private void deleteRoom(String roomName)
 	{
-		ArrayList<String> rooms = new ArrayList<>();
-		for(String key : roomList.keySet())
-			rooms.add(key);
-		return rooms;
-		
+		roomList.remove(roomName);
 	}
+	
 }
