@@ -10,17 +10,16 @@ import org.json.JSONObject;
 
 public class SocketClient {
 	//필드
-	MainServer mainServer;
+	ChatServer chatServer;
 	Socket socket;
 	DataInputStream dis;
 	DataOutputStream dos;
 	String clientIp;	
 	String chatName;
-	RoomManager roomManager;
 	//생성자
-	public SocketClient(MainServer mainServer, Socket socket) {
+	public SocketClient(ChatServer chatServer, Socket socket) {
 		try {
-			this.mainServer = mainServer;
+			this.chatServer = chatServer;
 			this.socket = socket;
 			this.dis = new DataInputStream(socket.getInputStream());
 			this.dos = new DataOutputStream(socket.getOutputStream());
@@ -32,13 +31,50 @@ public class SocketClient {
 	}	
 	//메소드: JSON 받기
 	public void receive() {
-		mainServer.threadPool.execute(() -> {
+		chatServer.threadPool.execute(() -> {
 			try {
 				while(true) {
-					CommandForServer();
+					String receiveJson = dis.readUTF();		
+					
+					JSONObject jsonObject = new JSONObject(receiveJson);
+					String command = jsonObject.getString("command");
+					
+					switch(command) {
+						case "incoming":
+							this.chatName = jsonObject.getString("data");
+							chatServer.sendToAll(this, "들어오셨습니다.");
+							chatServer.addSocketClient(this);
+							break;
+						case "message":
+							String message = jsonObject.getString("data");
+							chatServer.sendToAll(this, message);
+							break;
+						case "checkLogin":
+							String userId = jsonObject.getString("id");
+							String userPassword= jsonObject.getString("password");
+							chatServer.checkIdPass(this,userId, userPassword);
+							break;
+						case "registerMember":
+							String regId = jsonObject.getString("regId");
+							String regPw = jsonObject.getString("regPassword");
+							chatServer.registerMember(this, regId, regPw);
+							break;
+						case "createRoom":
+							String roomName = jsonObject.getString("roomName");
+							chatName = jsonObject.getString("chatName");
+							chatServer.addSocketClient(this);
+							chatServer.createRoom(this,roomName);
+							break;
+						case "whisper":
+							String target = jsonObject.getString("target");
+							String whisperMessage = jsonObject.getString("data");
+							chatServer.whisper(this, target, whisperMessage);
+							break;
+							}
 				}
 			} catch(IOException e) {
-				exitAlarm();
+				chatServer.sendToAll(this, "나가셨습니다.");
+				chatServer.removeSocketClient(this);
 			}
 		});
 	}
@@ -56,46 +92,4 @@ public class SocketClient {
 			socket.close();
 		} catch(Exception e) {}
 	}
-	
-	void CommandForServer() throws IOException
-	{
-		String receiveJson = dis.readUTF();		
-		
-		JSONObject jsonObject = new JSONObject(receiveJson);
-		String command = jsonObject.getString("command");
-		
-		switch(command) {
-			case "incoming":
-				this.chatName = jsonObject.getString("data");
-				roomManager.sendToAll(this, "들어오셨습니다.");
-				roomManager.enterRoom(null);
-				break;
-			case "message":
-				String message = jsonObject.getString("data");
-				roomManager.sendToAll(this, message);
-				break;
-			case "checkLogin":
-				String userId = jsonObject.getString("id");
-				String userPassword= jsonObject.getString("password");
-				mainServer.checkLogin(this, userId, userPassword);
-				break;
-			case "registerMember":
-				String regId = jsonObject.getString("regId");
-				String regPw = jsonObject.getString("regPassword");
-				mainServer.registerMember(this, regId, regPw);
-				break;
-			case "passwordSearch":
-		}
-	}
-	
-	void exitAlarm()
-	{
-		roomManager.sendToAll(this, "나가셨습니다.");
-		//roomManager.removeSocketClient(this);
-	}
-	public void enterRoom(RoomManager roomManager)
-	{
-		
-	}
-
 }

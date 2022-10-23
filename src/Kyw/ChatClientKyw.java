@@ -1,6 +1,7 @@
 package Kyw;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -19,6 +20,10 @@ import java.util.Scanner;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
+
+
+
 public class ChatClientKyw {
 	Socket socket;
 	DataInputStream dis;
@@ -32,8 +37,18 @@ public class ChatClientKyw {
 		System.out.println("[클라이언트] 서버에 연결됨");
 		System.out.println();
 	}
+	
+	public void send(String json) throws IOException {
+		byte[] data = json.getBytes("UTF8");
+	    System.out.println("길이 = " + data.length);
 
-	public void fileUpload(Scanner scanner) throws JSONException {
+
+		dos.writeInt(data.length);// 문자열의 길이(4byte)
+		dos.write(data);// 내용
+		dos.flush();
+	}
+
+	public void fileUpload(Scanner scanner) throws IOException {
 		try {
 			System.out.println("파일주소를 입력하세요:");
 			String fileName = scanner.next();
@@ -62,38 +77,62 @@ public class ChatClientKyw {
 		} catch (IOException ie) {
 			System.out.println(ie.getMessage());
 		}
+		
 	}
-	 public void fileDownload() throws IOException {
-	    	ServerSocket serverSocket = new ServerSocket(7000);
-	    	
+	 public void fileDownload(Scanner scanner) throws IOException {
 	        System.out.println("서버 준비완료");
-	       
-	        Socket sock = serverSocket.accept();
-	    	
-	    	DataInputStream dis = new DataInputStream(sock.getInputStream());
-	    	String fileName = dis.readUTF();
-	    	
-	    	File f = new File("/Users/kimyoungwook/Desktop/test/"+fileName);
-	    	DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
-	    	dos.writeUTF(f.getName());
-	    	dos.flush();
-	    	
-	    	FileInputStream fis = new FileInputStream("/Users/kimyoungwook/Desktop/"+fileName);
-	    	if (fileName.contains("jpg")||fileName.contains("png")||fileName.contains("jpeg")) 
-	    	{Runtime.getRuntime().exec("/Users/kimyoungwook/Desktop/"+fileName);}
-	    	
-	    	int n = 0;
-	    	byte b[] = new byte[1024];
-	    	while ((n = fis.read(b)) != -1) {
-	    		dos.write(b, 0, n);
-	    	}
+	        try {
+	          
+	            System.out.println("다운로드 할 파일의 주소를 입력하세요 ");
+	            String fileName = scanner.next();
+	            
+	            
+	            JSONObject jsonObject = new JSONObject(); 
+	            
+//	            jsonObject.put("statusCode", "0");
+	            jsonObject.put("command", "fileDownload");
+	            jsonObject.put("fileName", fileName);
+	            
+	            
+	            
+	            String json = jsonObject.toString();
+	            connect();
+	            send(json);
+	            fileDownloadResponse(fileName);
+	            
 
-	    	dos.close();
-	    	fis.close();
-	    	System.out.println("파일전송 완료");
-	    	sock.close();
-	    	
+	        } catch (UnknownHostException ue) {
+	            System.out.println(ue.getMessage());
+	        } catch (Exception ie) {
+	            System.out.println(ie.getMessage());
+	        }
+	 
 	    		}
+	 private void fileDownloadResponse(String fileName) throws Exception {
+
+		 
+	        String json = dis.readUTF();
+	        JSONObject root = new JSONObject(json);
+	        String statusCode = root.getString("statusCode");
+	        String message = root.getString("message");
+	        
+	        if (statusCode.equals("0")) {
+	            byte [] data = Base64.getDecoder().decode(root.getString("content").getBytes());
+
+	            File file = new File("/Users/kimyoungwook/Desktop/server/client/");
+	            
+	            try {
+	            	 BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(new File(file, fileName)));
+	                bos.write(data);
+	                bos.close();
+	            } catch (IOException e) {
+	                e.printStackTrace();
+	            }
+	            System.out.println("파일 다운로드 완료");
+	        } else {
+	            System.out.println(message);
+	        }
+	    }
 //목록 조회 
 	public List<String> getFileList( Scanner scanner ) {
 		System.out.println("조회 하실 폴더 명을 입력하세요.");
@@ -118,18 +157,7 @@ public class ChatClientKyw {
 		
 		return fileList; // 리스트 리턴해주기
 	}
-	public void send(String json) throws IOException {
-		byte[] data = json.getBytes("UTF8");
-	    System.out.println("길이 = " + data.length);
-
-//	    OutputStream out = new FileOutputStream("/Users/kimyoungwook/Desktop/땃쥐.jpeg");
-//	    out.write(data);
-//	    out.close();
-
-		dos.writeInt(data.length);// 문자열의 길이(4byte)
-		dos.write(data);// 내용
-		dos.flush();
-	}
+	
 
 	public void disconnect() throws IOException {
 		socket.close();
@@ -170,7 +198,7 @@ public class ChatClientKyw {
 					chatClient.getFileList(scanner);
 					break;
 				case "6":
-					chatClient.fileDownload();
+					chatClient.fileDownload(scanner);
 					break;
 				case "Q", "q":
 					scanner.close();
