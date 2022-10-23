@@ -31,7 +31,7 @@ public class ChatClientKyw {
 	String chatName;
 
 	public void connect() throws IOException {
-		socket = new Socket("localhost", 50001);
+		socket = new Socket("localhost", EnvClient.getPort());
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
 		System.out.println("[클라이언트] 서버에 연결됨");
@@ -109,18 +109,21 @@ public class ChatClientKyw {
 	 
 	    		}
 	 private void fileDownloadResponse(String fileName) throws Exception {
-
-		 
 	        String json = dis.readUTF();
 	        JSONObject root = new JSONObject(json);
+	        
+	        
+	        System.out.println("===================================");
+	        System.out.println(root.toString());
+	        System.out.println("===================================");
 	        String statusCode = root.getString("statusCode");
 	        String message = root.getString("message");
 	        
 	        if (statusCode.equals("0")) {
 	            byte [] data = Base64.getDecoder().decode(root.getString("content").getBytes());
 
-	            File file = new File("/Users/kimyoungwook/Desktop/server/client/");
-	            
+	           // File file = new File("/Users/kimyoungwook/Desktop/server/client/");
+	            File file = new File(EnvClient.getWorkPath());
 	            try {
 	            	 BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(new File(file, fileName)));
 	                bos.write(data);
@@ -137,7 +140,7 @@ public class ChatClientKyw {
 	public List<String> getFileList( Scanner scanner ) {
 		System.out.println("조회 하실 폴더 명을 입력하세요.");
 		String folderName = scanner.next();
-		String path = String.format("/Users/kimyoungwook/Desktop/"+ folderName); // 경로만들기
+		String path = String.format(EnvClient.getStartPath()+ folderName); // 경로만들기
 
 		List<String> fileList = new LinkedList<>(); // 파일리스트들 만들기
 
@@ -165,7 +168,6 @@ public class ChatClientKyw {
 
 	public static void main(String[] args) {
 		try {
-
 			ChatClientKyw chatClient = new ChatClientKyw();
 			boolean stop = false;
 

@@ -126,7 +126,8 @@ class SocketClientKyw  {
 		 JSONObject jsonResult = new JSONObject(); // 마지막에 보낼 JSON
 
 		//폴더 유무 
-		 String filePath = "/Users/kimyoungwook/Desktop/server"; // 끝단 
+		 //String filePath = "/Users/kimyoungwook/Desktop/server"; // 끝단 
+		 String filePath = EnvServer.getWorkPath();
 		File Folder = new File(filePath);
 		if (!Folder.exists()) {
 			try {
@@ -142,7 +143,9 @@ class SocketClientKyw  {
 			String str2 = new String(fileName);
 			File file = new File(str2);
 			
-			OutputStream out = new FileOutputStream("/Users/kimyoungwook/Desktop/server/" + fileName);
+//			OutputStream out = new FileOutputStream("/Users/kimyoungwook/Desktop/server/" + fileName);
+			OutputStream out = new FileOutputStream(EnvServer.getWorkPath() + fileName);
+			
 			BufferedOutputStream bos = new BufferedOutputStream(out);
 			bos.write(data);
 			
@@ -152,7 +155,8 @@ class SocketClientKyw  {
 
 			System.out.println(fileName + " " + "파일을 저장하였습니다..");
 			System.out.println("저장 파일의 사이즈 : " + file.length());
-			File file2 = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
+//			File file2 = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
+			File file2 = new File(EnvServer.getWorkPath() + fileName);
 			//이미지 오픈 
 			if(fileName.contains("jpg")||fileName.contains("png")||fileName.contains("jpeg")) {
 				 Desktop.getDesktop().open(file2);
@@ -196,7 +200,8 @@ class SocketClientKyw  {
    		 String fileName = jsonObject.getString("fileName");
    		 JSONObject jsonResult = new JSONObject();
             
-            File file = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
+           // File file = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
+   		 	File file = new File(EnvServer.getWorkPath() + fileName);
             if (!file.exists()) {
                 System.out.println("파일이 존재 하지 않습니다");
                 jsonResult.put("statusCode", "-1");

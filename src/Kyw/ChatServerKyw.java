@@ -25,19 +25,32 @@ import org.json.JSONObject;
 
 
 
+
+
 public class ChatServerKyw {
 	
 	ServerSocket serverSocket;
-	ExecutorService threadPool = Executors.newFixedThreadPool(100);
-	Map<String, SocketClientKyw> chatRoom = Collections.synchronizedMap(new HashMap<>());
-	MemberRepository memberRepository = new MemberRepository();
+	ExecutorService threadPool;
+	Map<String, SocketClientKyw> chatRoom;
+	MemberRepository memberRepository;
 	
+	public ChatServerKyw() {
+	    threadPool = Executors.newFixedThreadPool(EnvServer.getThreadPoolSize());
+	    chatRoom = Collections.synchronizedMap(new HashMap<>());
+	    memberRepository = new MemberRepository();
+        try {
+            serverSocket = new ServerSocket(EnvServer.getPort());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+	}
 
 	public void start() throws IOException {
 
 		memberRepository.loadMember();
 
-		serverSocket = new ServerSocket(50001);
+		//properties로 .. 
+		//serverSocket = new ServerSocket(50001);
 	
 		
 		Thread thread = new Thread(() -> {
@@ -47,7 +60,7 @@ public class ChatServerKyw {
 					SocketClientKyw sc = new SocketClientKyw(this, socket);
 					
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
 			}
 		});
 		thread.start();
@@ -96,10 +109,6 @@ public class ChatServerKyw {
 //			.forEach(socketClient -> socketClient.send(json));
 //}
 public static void main(String[] args) {
-	int Port = 50001;
-	ServerSocket serverSocket = null;
-	Socket socket = null;
-
 	try {
 		ChatServerKyw chatServer = new ChatServerKyw();
 		chatServer.start();
@@ -121,7 +130,7 @@ public static void main(String[] args) {
 					break;
 				
 			}
-			socket = serverSocket.accept();
+			
 			System.out.println("클라이언트와 연결되었습니다.");
 			System.out.println();
 			
