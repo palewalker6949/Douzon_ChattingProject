@@ -4,7 +4,7 @@
 ## 구현 목록<br/>
   -채팅 서버<br/>
   -로그인(로컬 체크)<br/>
-    ID : hong   / passwd : 1234<br/>
+   TEST ID : hong   / passwd : 1234<br/>
   -채팅방 생성<br/>
   -채팅방 입장<br/>
   -채팅방 나가기<br/>
