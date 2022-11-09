@@ -98,11 +98,9 @@ public class ClientSocket
 						stop=true;
 						break;
 					case "enterRoom":
-						System.out.println("enter : " + uid);
 						enterRoom(jsonObject);
 						break;
 					case "createRoom":
-						System.out.println("create : " + uid);
 						createRoom(jsonObject);
 						stop=true;
 						break;
@@ -111,7 +109,6 @@ public class ClientSocket
 						stop=true;
 						break;
 					case "sendToAll":
-						System.out.println("send : " + uid);
 						sendToAll(jsonObject);
 						break;
 						
@@ -149,6 +146,7 @@ public class ClientSocket
 	{
 		String id = jsonObject.getString("uid");
 		String pwd = jsonObject.getString("pwd");
+		System.out.println("login : " + id);
 		
 		JSONObject sendMessage = new JSONObject();
 		
@@ -160,7 +158,7 @@ public class ClientSocket
 			if(pwd.equals(member.getPwd()))
 			{//비밀번호 체크
 				sendMessage.put("isSuccess", "success");
-				this.uid = id;
+				uid = id;
 			}
 			
 			else
