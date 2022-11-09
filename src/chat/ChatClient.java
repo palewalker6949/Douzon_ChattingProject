@@ -33,6 +33,7 @@ public class ChatClient {
 	static boolean isCheckLogin = false;
 	Scanner scanner;
 	static boolean isRun;
+	//메뉴 관리 변수 
 	static SCENESTATE curState = SCENESTATE.DEFAULT;
 	static boolean isEnterChatting = false;
 	static Member userMemberInfo = null;
@@ -43,7 +44,7 @@ public class ChatClient {
 	
 	//메소드: 서버 연결
 	public  void connect() throws IOException {
-		socket = new Socket("localhost", 50001);
+		socket = new Socket("localhost", EnvClient.getPort());
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
 		System.out.println("[클라이언트] 서버에 연결됨");		
@@ -84,9 +85,7 @@ public class ChatClient {
 		
 		try {			
 			ChatClient chatClient = new ChatClient();
-			chatClient.mainMenu();
-			
-//		
+			chatClient.mainMenu();	
 		} catch(Exception e) {
 			e.printStackTrace();
 			System.out.println("[클라이언트] 서버 연결 안됨");
@@ -241,18 +240,22 @@ public class ChatClient {
 			JSONObject jsonObject = new JSONObject();
 			File file = new File(fileName);
 			if (!file.exists()) {
-				System.out.println("파일이 존재 하지 않습니다");
+				System.out.println("업로드 할 파일이 존재 하지 않습니다");
 				return;
 			}
+			//내용 읽기
 			BufferedInputStream in = new BufferedInputStream(new FileInputStream(file));
 			byte[] data = new byte[(int) file.length()];
 			in.read(data);
 			in.close();
+			
+			//전송할 메세지 구성 
 			jsonObject.put("command", "fileUpload");
 			jsonObject.put("fileName", file.getName());
 			jsonObject.put("content", new String(Base64.getEncoder().encode(data)));
 
 			String json = jsonObject.toString();
+			// 연결 
 			connect();
 			send(json);
 			

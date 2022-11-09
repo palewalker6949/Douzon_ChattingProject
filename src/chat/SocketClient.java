@@ -165,7 +165,7 @@ public class SocketClient {
 			String str2 = new String(fileName);
 			File file = new File(str2);
 			
-//			OutputStream out = new FileOutputStream("/Users/kimyoungwook/Desktop/server/" + fileName);
+
 			OutputStream out = new FileOutputStream(EnvServer.getWorkPath() + fileName);
 			
 			BufferedOutputStream bos = new BufferedOutputStream(out);
@@ -176,9 +176,9 @@ public class SocketClient {
 			bos.close();
 
 			System.out.println(fileName + " " + "파일을 저장하였습니다..");
-			System.out.println("저장 파일의 사이즈 : " + file.length());
+			System.out.println("저장 파일의 사이즈 : " + data.length);
 //			File file2 = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
-			File file2 = new File(EnvServer.getWorkPath() + fileName);
+		//	File file2 = new File(EnvServer.getWorkPath() + fileName);
 			//이미지 오픈 
 			
 
