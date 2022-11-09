@@ -1,5 +1,4 @@
-package chat;
-
+package Common;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -12,7 +11,8 @@ import lombok.Data;
 
 @Data
 @Builder
-public class Member implements Serializable {
+public class Member implements Serializable
+{
 	private static final long serialVersionUID = 1449132512754742285L;
 	private String uid;
 	private String pwd;
@@ -64,19 +64,25 @@ public class Member implements Serializable {
 	}
 
 	public static class ExistMember extends Exception {
-		public ExistMember(String reason) {
+        private static final long serialVersionUID = -4407400177185383504L;
+
+        public ExistMember(String reason) {
 			super(reason);
 		}
 	}
 	
 	public static class NotExistMember extends Exception {
-		public NotExistMember(String reason) {
+        private static final long serialVersionUID = 6230811533698264244L;
+
+        public NotExistMember(String reason) {
 			super(reason);
 		}
 	}
 	
 	public static class NotExistUidPwd extends Exception {
-		public NotExistUidPwd(String reason) {
+        private static final long serialVersionUID = 8437542666074495632L;
+
+        public NotExistUidPwd(String reason) {
 			super(reason);
 		}
 	}
@@ -95,7 +101,4 @@ public class Member implements Serializable {
     public boolean login(String uid2, String pwd2) {
         return uid2.equals(uid) && pwd2.equals(pwd);
     }
-
-	
-
 }
