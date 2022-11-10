@@ -267,7 +267,7 @@ public class ChatClient
 		
 		disconnect();
 		
-		if(isExist.equals("success"))
+		if(isExist.equals("failed"))
 		{
 			System.out.println("이미 존재하는 id입니다");
 			return;

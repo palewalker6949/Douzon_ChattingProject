@@ -17,6 +17,7 @@ public class MainServer
 	Map<String,Map<String, ClientSocket>> chatRooms;
 	Map<String, ClientSocket> allClients;
 	MemberRepository memberRepository;
+	MemberRepositoryDB memberRepositoryDB;
 	RoomManager roomManager;
 	
 	public void start() throws IOException {
@@ -38,7 +39,8 @@ public class MainServer
 	{
 		threadPool = Executors.newFixedThreadPool(Env.getThreadPoolSize());
 		chatRooms = Collections.synchronizedMap(new HashMap<>());
-		memberRepository = new MemberRepository();
+		// memberRepository = new MemberRepository();
+		memberRepositoryDB = new MemberRepositoryDB();
 		roomManager = new RoomManager(this);
 		try
 		{
@@ -103,9 +105,14 @@ public class MainServer
 		System.out.println("서버 퇴장 : " + key);
 	}
 	
-	public MemberRepository getMemberRepository()
+//	public MemberRepository getMemberRepository()
+//	{
+//		return memberRepository;
+//	}
+	
+	public MemberRepositoryDB getMemberRepositoryDB()
 	{
-		return memberRepository;
+		return memberRepositoryDB;
 	}
 	
 	public RoomManager getRoomManager()

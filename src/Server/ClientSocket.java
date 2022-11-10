@@ -175,14 +175,15 @@ public class ClientSocket
 		JSONObject root = new JSONObject();
 		
 		//존재하는 id면 true 리턴후 결과값 send
+		System.out.println(isExistMember(id));
 		if(isExistMember(id))
 		{
 			root.put("isSuccess", "failed");
 		}
 		else
 		{
-			mainServer.getMemberRepository().
-			insertMember(new Member(jsonObject));
+			//mainServer.getMemberRepository().insertMember(new Member(jsonObject));
+			mainServer.getMemberRepositoryDB().insertMember(new Member(jsonObject));
 			root.put("isSuccess", "success");
 			this.uid = id;
 		}
@@ -215,7 +216,8 @@ public class ClientSocket
 		if(isExistMember(id))
 		{
 			Member member = new Member(jsonObject);
-			mainServer.getMemberRepository().updateMember(member);
+			//mainServer.getMemberRepository().updateMember(member);
+			mainServer.getMemberRepositoryDB().updateMember(member);
 			root.put("isSuccess", "success");
 		}
 		else
@@ -233,7 +235,8 @@ public class ClientSocket
 		
 		if(isExistMember(id))
 		{
-			mainServer.getMemberRepository().deleteMember(id);
+			//mainServer.getMemberRepository().deleteMember(id);
+			mainServer.getMemberRepositoryDB().deleteMember(id);
 			root.put("isSuccess", "success");
 		}
 		else
@@ -419,12 +422,12 @@ public class ClientSocket
     
     private Boolean isExistMember(String id)
 	{
-		return mainServer.getMemberRepository().isExistMember(id);
+		return mainServer.getMemberRepositoryDB().isExistMember(id);
 	}
 	
 	private Member getMember(String id)
 	{
-		return mainServer.getMemberRepository().getMemberById(id);
+		return mainServer.getMemberRepositoryDB().getMemberById(id);
 	}
 	
 	private boolean isExistRoom(String roomName)
