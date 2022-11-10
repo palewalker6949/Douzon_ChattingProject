@@ -10,10 +10,12 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+
 public class MainServer
 {
 	ServerSocket serverSocket;
 	ExecutorService threadPool;
+	FileRepository fileRepository;
 	Map<String,Map<String, ClientSocket>> chatRooms;
 	Map<String, ClientSocket> allClients;
 	MemberRepository memberRepository;
@@ -38,12 +40,16 @@ public class MainServer
 	{
 		threadPool = Executors.newFixedThreadPool(Env.getThreadPoolSize());
 		chatRooms = Collections.synchronizedMap(new HashMap<>());
-		memberRepository = new MemberRepository();
+		//memberRepositoryFile = new MemberRepositoryFile();
+		//logger = new Logger()
+		fileRepository = new FileRepository();
 		roomManager = new RoomManager(this);
 		try
 		{
 			serverSocket = new ServerSocket(Env.getPort());
-		} catch (IOException e)
+            Class<?> cls = Class.forName(Env.getProperty("MemberRepository"));
+            memberRepository = (MemberRepository) cls.getDeclaredConstructor().newInstance();
+		} catch (Exception e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -99,7 +105,6 @@ public class MainServer
 	public void deleteClientSocket(ClientSocket clientSocket)
 	{
 		String key =  clientSocket.getKey();
-		allClients.remove(key);
 		System.out.println("서버 퇴장 : " + key);
 	}
 	
@@ -111,6 +116,11 @@ public class MainServer
 	public RoomManager getRoomManager()
 	{
 		return roomManager;
+	}
+	
+	public FileRepository getFileRepository() 
+	{
+		return fileRepository;
 	}
 	
 }

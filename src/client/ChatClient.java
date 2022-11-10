@@ -134,19 +134,15 @@ public class ChatClient
 				//파일 전송 메뉴
 				case FILETRANSFER:
 				{
-					System.out.print("메뉴 선택 => ");
-					 menuNum = scanner.nextLine();
 					switch(menuNum) {
 					case "1":
 						//목록
-						try
-						{
+						try {
 							requestFileList();
-						} catch (IOException e)
-						{
+						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
+						}	
 						break;
 					case "2":
 						//다운로드
@@ -267,7 +263,7 @@ public class ChatClient
 		
 		disconnect();
 		
-		if(isExist.equals("success"))
+		if(isExist.equals("failed"))
 		{
 			System.out.println("이미 존재하는 id입니다");
 			return;
@@ -477,24 +473,26 @@ public class ChatClient
 	
 	public void fileDownload()  {
         System.out.println("서버 준비완료");
+        
         try {
           
-            System.out.println("다운로드 할 파일의 주소를 입력하세요 ");
-            String fileName = scanner.next();
+            System.out.println("다운로드 할 파일번호를 입력하세요 ");
+            int filenumber = scanner.nextInt();
             
             
             JSONObject jsonObject = new JSONObject(); 
             
 //            jsonObject.put("statusCode", "0");
             jsonObject.put("command", "fileDownload");
-            jsonObject.put("fileName", fileName);
+            jsonObject.put("fileNumber", filenumber);
+            
             
             
             
             String json = jsonObject.toString();
             connect();
             send(json);
-            fileDownloadResponse(fileName);
+            fileDownloadResponse();
 
         } 
          catch (Exception ie) {
@@ -503,10 +501,10 @@ public class ChatClient
  
 	}
 	
-	private void fileDownloadResponse(String fileName) throws IOException {
+	private void fileDownloadResponse() throws IOException {
 	    String json = dis.readUTF();
         JSONObject root = new JSONObject(json);
-        
+        String fileName = root.getString("fileName");
         
         System.out.println("===================================");
         System.out.println(root.toString());

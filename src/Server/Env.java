@@ -41,4 +41,7 @@ public class Env
     public static String getProperty(String name) {
     	return properties.getProperty(name);
     }
+    public static int getBufferSize() {
+        return Integer.parseInt(properties.getProperty("buffer.size", "4096"));
+    }
 }

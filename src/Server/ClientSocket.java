@@ -15,6 +15,7 @@ import java.net.UnknownHostException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.naming.NotContextException;
 
@@ -22,6 +23,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import Common.Member;
+import Common.Member.ExistMember;
+import Common.Member.NotExistUidPwd;
+
 
 public class ClientSocket
 {
@@ -32,7 +36,7 @@ public class ClientSocket
 	String clientIp;	
     String uid = new String();
     private Room curRoom;
-    public static final int DEFAULT_BUFFER_SIZE = 4096;
+    
 	
 	//생성자
 	public ClientSocket(MainServer mainServer, Socket socket) {
@@ -114,7 +118,7 @@ public class ClientSocket
 						
 					}
 				}
-			} catch(IOException e) {
+			} catch(IOException | NotExistUidPwd e) {
 				e.printStackTrace();
 				mainServer.deleteClientSocket(this);
                     close();
@@ -142,7 +146,7 @@ public class ClientSocket
 	
 //region member method
 
-	private void login(JSONObject jsonObject)
+	private void login(JSONObject jsonObject) throws NotExistUidPwd
 	{
 		String id = jsonObject.getString("uid");
 		String pwd = jsonObject.getString("pwd");
@@ -181,15 +185,20 @@ public class ClientSocket
 		}
 		else
 		{
-			mainServer.getMemberRepository().
-			insertMember(new Member(jsonObject));
+			try {
+				mainServer.memberRepository.
+				insertMember(new Member(jsonObject));
+			} catch (ExistMember e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			root.put("isSuccess", "success");
 			this.uid = id;
 		}
 		send(root.toString());
 	}
 	
-	private void searchPwd(JSONObject jsonObject)
+	private void searchPwd(JSONObject jsonObject) throws NotExistUidPwd
 	{
 		String id = jsonObject.getString("uid");
 		JSONObject root = new JSONObject();
@@ -215,7 +224,12 @@ public class ClientSocket
 		if(isExistMember(id))
 		{
 			Member member = new Member(jsonObject);
-			mainServer.getMemberRepository().updateMember(member);
+			try {
+				mainServer.memberRepository.updateMember(member);
+			} catch (NotExistUidPwd e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			root.put("isSuccess", "success");
 		}
 		else
@@ -233,7 +247,7 @@ public class ClientSocket
 		
 		if(isExistMember(id))
 		{
-			mainServer.getMemberRepository().deleteMember(id);
+			mainServer.memberRepository.deleteMember(id);
 			root.put("isSuccess", "success");
 		}
 		else
@@ -276,14 +290,14 @@ public class ClientSocket
 			bos.write(data);
 			bos.close();
 			System.out.println(fileName + " " + "파일을 저장하였습니다..");
-			System.out.println("저장 파일의 사이즈 : " + file.length());
+			System.out.println("저장 파일의 사이즈 : " + data.length + "Byte");
 //			File file2 = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
 			File file2 = new File(Env.getWorkPath() + fileName);
 			//이미지 오픈 
 
 			// 바이트 데이터를 전송받으면서 크기 기록
 			int len;
-			byte[] data1 = new byte[DEFAULT_BUFFER_SIZE];
+			byte[] data1 = new byte[Env.getBufferSize()];
 			while ((len = dis.read(data1)) != -1) {
 				bos.write(data1, 0, len);
 			}
@@ -292,7 +306,8 @@ public class ClientSocket
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		
+		jsonObject.put("filePath", Env.getWorkPath() + fileName);
+		mainServer.getFileRepository().UploadFile(jsonObject);
 		jsonResult.put("statusCode", "0");
 		jsonResult.put("message", "파일수신 완료");
 		send(jsonResult.toString());
@@ -302,11 +317,11 @@ public class ClientSocket
 	    
     public void fileDownload(JSONObject jsonObject) throws IOException {
     	try {
-      		 String fileName = jsonObject.getString("fileName");
+      		 int filenumber = jsonObject.getInt("fileNumber");
       		 JSONObject jsonResult = new JSONObject();
                
               // File file = new File("/Users/kimyoungwook/Desktop/server/" + fileName);
-      		 	File file = new File(Env.getWorkPath() + fileName);
+      		 	File file = new File(mainServer.getFileRepository().getFileLocation(filenumber));
                if (!file.exists()) {
                    System.out.println("파일이 존재 하지 않습니다");
                    jsonResult.put("statusCode", "-1");
@@ -339,24 +354,10 @@ public class ClientSocket
 		}
     
     public void sendFileList() {
-		String path = String.format(Env.getWorkPath()); // 경로만들기
+    	JSONArray jsonArray = mainServer.getFileRepository().showFilelist();
+    	
+    	JSONObject jsonObject = new JSONObject();
 
-		List<String> fileList = new LinkedList<>(); // 파일리스트들 만들기
-
-		File dir = new File(path);// 경로를 담은 파일 객체 만들기
-		File[] files = dir.listFiles(); // 디렉토리 경로에 있는 파일들을 배열에 담기
-
-		for (File f : files) { // 배열에서 파일 찾기
-			if (f.isFile()) {
-				fileList.add(f.getName());
-				// 있으면 보내준다. f.getName() 이름을 담아서 리스트에 넣어주기
-			} else if (!f.isFile()) {
-				break;
-				// 없으면 나가기.
-			}
-		}
-		JSONObject jsonObject = new JSONObject();
-		JSONArray jsonArray = new JSONArray(fileList);
 		jsonObject.put("fileList", jsonArray);
 		send(jsonObject.toString());
 	}
@@ -419,12 +420,12 @@ public class ClientSocket
     
     private Boolean isExistMember(String id)
 	{
-		return mainServer.getMemberRepository().isExistMember(id);
+		return mainServer.memberRepository.isExistMember(id);
 	}
 	
-	private Member getMember(String id)
+	private Member getMember(String id) throws NotExistUidPwd
 	{
-		return mainServer.getMemberRepository().getMemberById(id);
+		return mainServer.memberRepository.getMemberById(id);
 	}
 	
 	private boolean isExistRoom(String roomName)
