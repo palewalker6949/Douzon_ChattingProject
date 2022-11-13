@@ -181,8 +181,7 @@ public class ClientSocket
 		}
 		else
 		{
-			mainServer.getMemberRepository().
-			insertMember(new Member(jsonObject));
+			mainServer.insertMember(new Member(jsonObject));
 			root.put("isSuccess", "success");
 			this.uid = id;
 		}
@@ -215,7 +214,7 @@ public class ClientSocket
 		if(isExistMember(id))
 		{
 			Member member = new Member(jsonObject);
-			mainServer.getMemberRepository().updateMember(member);
+			mainServer.updateMember(member);
 			root.put("isSuccess", "success");
 		}
 		else
@@ -233,7 +232,7 @@ public class ClientSocket
 		
 		if(isExistMember(id))
 		{
-			mainServer.getMemberRepository().deleteMember(id);
+			mainServer.deleteMember(id);
 			root.put("isSuccess", "success");
 		}
 		else
@@ -250,7 +249,7 @@ public class ClientSocket
 		String fileName = jsonObject.getString("fileName"); // 경로 가져오기 
 		 byte [] data = Base64.getDecoder().decode(jsonObject.getString("content").getBytes());
 		 JSONObject jsonResult = new JSONObject(); // 마지막에 보낼 JSON
-
+		 
 		//폴더 유무 
 		 //String filePath = "/Users/kimyoungwook/Desktop/server"; // 끝단 
 		 String filePath = Env.getWorkPath();
@@ -395,6 +394,7 @@ public class ClientSocket
     private void enterRoom(JSONObject jsonObject)
     {
     	curRoom = getRoomManager().enterRoom(jsonObject.getString("roomName"), this);
+    	SetUid(jsonObject.getString("uid"));
     }
     
     private void leaveRoom(JSONObject jsonObject)
@@ -410,21 +410,19 @@ public class ClientSocket
 //region chat method
     private void sendToAll(JSONObject jsonObject)
     {
-    	System.out.println("메시지 보냄");
-    	String message = jsonObject.getString("message");
-    	curRoom.sendToAll(this, message);
+    	curRoom.sendToAll(this, jsonObject);
     }
     
 //endregion
     
     private Boolean isExistMember(String id)
 	{
-		return mainServer.getMemberRepository().isExistMember(id);
+		return mainServer.isExistMember(id);
 	}
 	
 	private Member getMember(String id)
 	{
-		return mainServer.getMemberRepository().getMemberById(id);
+		return mainServer.getMemberById(id);
 	}
 	
 	private boolean isExistRoom(String roomName)
@@ -448,6 +446,16 @@ public class ClientSocket
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public String getUid()
+	{
+		return uid;
+	}
+	
+	private void SetUid(String id)
+	{
+		uid = id;
 	}
 	
 	

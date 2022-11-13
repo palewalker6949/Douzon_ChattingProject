@@ -1,6 +1,5 @@
 package Server;
 
-import java.lang.ref.Cleaner.Cleanable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,17 +29,16 @@ public class Room
 		chatClients.remove(clientSocket.getKey());
 		if(chatClients.size() <=0 )
 			roomManager.deleteRoom(roomName);
-		
 	}
 	
-	public void sendToAll(ClientSocket clientSocket, String message)
+	public void sendToAll(ClientSocket clientSocket, JSONObject jsonObject)
 	{
 		System.out.println(chatClients.keySet());
 		JSONObject root = new JSONObject();
 		root.put("clientIp",clientSocket.clientIp);
-		root.put("chatName",clientSocket.uid);
-		root.put("message",message);
-		
+		root.put("chatName",jsonObject.getString("uid"));
+		root.put("message",jsonObject.getString("message"));
+		roomManager.getLogger().write(jsonObject);
 		chatClients.values().stream()
         .forEach(socketClient -> socketClient.send(root.toString()));
 	}

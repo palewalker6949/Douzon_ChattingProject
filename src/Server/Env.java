@@ -39,6 +39,12 @@ public class Env
     }
     
     public static String getProperty(String name) {
+    	System.out.println(properties.getProperty(name));
     	return properties.getProperty(name);
+    }
+    
+    public static String getProperty(String name,String defaultValue)
+    {
+    	return properties.getProperty(name, defaultValue);
     }
 }

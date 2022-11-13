@@ -37,6 +37,7 @@ public class ChatClient
 	String roomName;
 	Scanner scanner;
 	MenuStatus curMenuState = MenuStatus.START;
+	String uid;
 	
 	public static void main(String[] args)
 	{
@@ -134,8 +135,6 @@ public class ChatClient
 				//파일 전송 메뉴
 				case FILETRANSFER:
 				{
-					System.out.print("메뉴 선택 => ");
-					 menuNum = scanner.nextLine();
 					switch(menuNum) {
 					case "1":
 						//목록
@@ -228,6 +227,7 @@ public class ChatClient
 		{
 			System.out.println("로그인에 성공하셨습니다");
 			SetMenuStatus(MenuStatus.LOGIN);
+			setUid(uid);
 		}
 		else
 		{
@@ -267,13 +267,14 @@ public class ChatClient
 		
 		disconnect();
 		
-		if(isExist.equals("success"))
+		if(isExist.equals("failed"))
 		{
 			System.out.println("이미 존재하는 id입니다");
 			return;
 		}
 		
 		System.out.println("회원가입이 성공적으로 되었습니다");
+		setUid(uid);
 		SetMenuStatus(MenuStatus.LOGIN);
 	}
 	
@@ -392,6 +393,11 @@ public class ChatClient
 		}
 	}
 	
+	private void setUid(String id)
+	{
+		this.uid = id;
+	}
+	
 //endregion
 	
 //region server Connect Method	
@@ -458,6 +464,7 @@ public class ChatClient
 			in.close();
 			jsonObject.put("command", "fileUpload");
 			jsonObject.put("fileName", file.getName());
+			jsonObject.put("uid",uid);
 			jsonObject.put("content", new String(Base64.getEncoder().encode(data)));
 
 			String json = jsonObject.toString();
@@ -633,6 +640,7 @@ public class ChatClient
 		
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("command","enterRoom");
+		jsonObject.put("uid",uid);
 		jsonObject.put("roomName",roomName);
 		send(jsonObject.toString());
 		
@@ -657,10 +665,20 @@ public class ChatClient
 				jsonObject.put("command", "leaveRoom");
 				break;
 			}
+			else if(message.startsWith("/w"))
+			{
+				String edit = message.substring("/w".length());
+				String[] array = edit.split(" ");
+				jsonObject.put("command", "whisper");
+				jsonObject.put("targetName",array[0]);
+				jsonObject.put("message", array[1]);
+				jsonObject.put("uid",uid);
+			}
 			else
 			{
 				jsonObject.put("command", "sendToAll");
 				jsonObject.put("message", message);
+				jsonObject.put("uid", uid);
 			}
 			send(jsonObject.toString());
 		}
@@ -670,8 +688,11 @@ public class ChatClient
 	
 //endregion
 	
+	
+	
 	private void logOut()
 	{
+		setUid("");
 		SetMenuStatus(MenuStatus.START);
 	}
 }

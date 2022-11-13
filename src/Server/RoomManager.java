@@ -54,5 +54,10 @@ public class RoomManager
 			return true;
 	}
 	
+	public Logger getLogger()
+	{
+		return mainServer.getLogger();
+	}
+	
 	
 }
